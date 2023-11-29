@@ -17,14 +17,14 @@
             :page-state-text #"Page 1 of (\d+)"
             })
 
-(defn visit-page [url]
+(defn go-to [url]
   (e/go driver url))
 
 (defn query [xpath]
   (e/query driver xpath))
 
 (defn visit-calendar []
-  (visit-page (:city-council-calendar url)))
+  (go-to (:city-council-calendar url)))
 
 (defn get-children-of [element query]
   (e/children driver element query))
