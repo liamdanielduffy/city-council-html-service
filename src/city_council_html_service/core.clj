@@ -2,7 +2,7 @@
   (:require [etaoin.api :as e]
             [etaoin.keys :as k]))
 
-(def driver (e/chrome))
+(defonce driver (e/chrome))
 
 (def xpath {
              :page-buttons-container "//*[@id=\"ctl00_ContentPlaceHolder1_gridCalendar_ctl00\"]/thead/tr[1]/td/table/tbody/tr/td/div[1]"
@@ -46,6 +46,9 @@
 (defn get-page-button-labels []
   (map get-text-for-element (get-page-buttons)))
 
+(defn get-page-buttons-by-label []
+  (zipmap (get-page-button-labels) (get-page-buttons)))
+
 (defn get-total-pages []
   (let
     [el-id (get-el-id :page-state-text)
@@ -58,8 +61,27 @@
 (defn page-exists [page-num]
   (<= page-num (get-total-pages)))
 
-;; check if page exists
-;; if so, check if page is on screen
-;; if so, return page element
-;; if not, return nil (stub)
-;; eventually if not, click "...", wait for page num to be visible, return page element
+(defn is-int-string [s]
+  (try
+    (do (Integer/parseInt s) true)
+    (catch NumberFormatException _ false)))
+
+(defn get-visible-page-button-numbers []
+  (let [button-labels (get-page-button-labels)
+        button-labels-with-numbers (filter #(is-int-string %1) button-labels)
+        button-label-numbers (map #(Integer/parseInt %1) button-labels-with-numbers)]
+    button-label-numbers))
+
+(defn page-button-is-visible [page-num]
+  (let [
+        button-label-numbers (get-visible-page-button-numbers)
+        label-numbers-set (set button-label-numbers)]
+   (contains? label-numbers-set page-num)))
+
+(defn click-page-button [page-num]
+  (when (page-button-is-visible page-num)
+    (let [page-button-label (str page-num)
+          page-buttons-by-label (get-page-buttons-by-label)
+          page-button (page-buttons-by-label page-button-label)]
+      (e/click-el driver page-button))
+    ))
