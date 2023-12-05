@@ -97,8 +97,16 @@
         (wait-for-page-load)
         (recur page-num)))))
 
-(defn visit-all-pages []
+(defn get-pages-html []
   (loop [num-remaining (total-pages)
-         page-num 1]
+         page-num 1
+         html-vec []]
     (visit-page page-num)
-    (recur (dec num-remaining) (inc page-num))))
+    (def html (e/get-source driver))
+    (if (pos? num-remaining)
+      (recur
+        (dec num-remaining)
+        (inc page-num)
+        (conj html-vec html))
+      html-vec)))
+
