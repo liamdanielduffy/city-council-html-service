@@ -83,7 +83,7 @@
 (defn wait-for-page-load []
   (e/wait-visible driver (:page-buttons-container xpath)))
 
-(defn click-page-btn [page-num]
+(defn visit-page [page-num]
   (let [is-visible (page-btn-is-visible page-num)
         exists (page-exists page-num)
         label (str page-num)
@@ -96,3 +96,9 @@
         (click (more-pages-btn))
         (wait-for-page-load)
         (recur page-num)))))
+
+(defn visit-all-pages []
+  (loop [num-remaining (total-pages)
+         page-num 1]
+    (visit-page page-num)
+    (recur (dec num-remaining) (inc page-num))))
