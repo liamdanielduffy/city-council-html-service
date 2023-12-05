@@ -3,9 +3,12 @@
 
 (defonce driver (e/chrome))
 
-(def xpath {
+(def queries {
              :page-buttons-container "//*[@id=\"ctl00_ContentPlaceHolder1_gridCalendar_ctl00\"]/thead/tr[1]/td/table/tbody/tr/td/div[1]"
              :page-state-text "/html/body/form/div[3]/div[6]/div/div/div[5]/div[1]/div/div/div/div/table/thead/tr[1]/td/table/tbody/tr/td/div[2]"
+             :more-pages-button { :title "Next Pages" }
+              :years-dropdown "//*[@id=\"ctl00_ContentPlaceHolder1_tdYears\"]"
+              :all-years-dropdown-item "//*[@id=\"ctl00_ContentPlaceHolder1_lstYears_DropDown\"]/div/ul/li[1]"
              })
 
 (def url {
@@ -19,20 +22,23 @@
 (defn go-to [url]
   (e/go driver url))
 
-(defn query [xpath]
-  (e/query driver xpath))
+(defn query [q]
+  (e/query driver q))
 
 (defn go-to-calendar []
   (go-to (:city-council-calendar url)))
 
-(defn click [el]
+(defn click-el [el]
   (e/click-el driver el))
 
 (defn get-children-of [element query]
   (e/children driver element query))
 
-(defn query-el [xpath-key]
-  (query (xpath-key xpath)))
+(defn query-el [q]
+  (query (q queries)))
+
+(defn click [query-key]
+  (click-el (query-el query-key)))
 
 (defn page-btns []
   (let
@@ -78,10 +84,10 @@
   (zipmap (page-btn-labels) (page-btns)))
 
 (defn more-pages-btn []
-  ((page-btns-by-label) "..."))
+  (query-el :more-pages-button))
 
 (defn wait-for-page-load []
-  (e/wait-visible driver (:page-buttons-container xpath)))
+  (e/wait-visible driver (:page-buttons-container queries)))
 
 (defn visit-page [page-num]
   (let [is-visible (page-btn-is-visible page-num)
@@ -90,10 +96,10 @@
         btn ((page-btns-by-label) label)]
     (if is-visible
       (do
-        (click btn)
+        (click-el btn)
         (wait-for-page-load))
       (when exists
-        (click (more-pages-btn))
+        (click :more-pages-button)
         (wait-for-page-load)
         (recur page-num)))))
 
@@ -109,4 +115,3 @@
         (inc page-num)
         (conj html-vec html))
       html-vec)))
-
