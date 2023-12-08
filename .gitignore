@@ -16,3 +16,7 @@ pom.xml.asc
 .DS_Store
 .env
 node_modules
+/.cache
+/build
+/public/build
+data.json

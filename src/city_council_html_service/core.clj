@@ -1,5 +1,8 @@
 (ns city-council-html-service.core
-  (:require [etaoin.api :as e]))
+  (:require [etaoin.api :as e]
+            [cheshire.core :as json]
+            [hiccup2.core :as h]
+            [clj-http.client :as client]))
 
 (defonce driver (e/chrome))
 
@@ -87,7 +90,7 @@
   (query-el :more-pages-button))
 
 (defn wait-for-page-load []
-  (e/wait-visible driver (:page-buttons-container queries)))
+  (e/wait-visible driver (:page-buttons-container queries) { :timeout 30 }))
 
 (defn visit-page [page-num]
   (let [is-visible (page-btn-is-visible page-num)
@@ -109,9 +112,22 @@
          html-vec []]
     (visit-page page-num)
     (def html (e/get-source driver))
+
     (if (pos? num-remaining)
       (recur
         (dec num-remaining)
         (inc page-num)
         (conj html-vec html))
       html-vec)))
+
+(defn save-as-json
+  [data filename]
+  (with-open [w (java.io.BufferedWriter. (java.io.FileWriter. filename))]
+    (.write w (json/generate-string data))))
+
+(defn fetch-html [url]
+  (try
+    (let [response (client/get url)]
+      (:body response))
+    (catch Exception e
+      (str "Failed to fetch HTML from URL: " (.getMessage e)))))

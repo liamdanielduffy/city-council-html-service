@@ -8,18 +8,22 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model Scrape {
+model Snapshot {
   id            String                @id @default(uuid())
+  snapshotDate  DateTime              @default(now())
   createdAt     DateTime              @default(now())
   calendarPages ScrapedCalendarPage[]
+  numPages      Int
 }
 
 model ScrapedCalendarPage {
-  id         String @id @default(uuid())
-  html       String @db.LongText
-  pageNumber Int
-  scrapeId   String
-  scrape     Scrape @relation(fields: [scrapeId], references: [id])
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  html       String   @db.LongText
+  pageNumber Int      @unique
+  snapshotId String
+  snapshot   Snapshot @relation(fields: [snapshotId], references: [id])
 
-  @@index([scrapeId])
+  @@index([snapshotId])
 }

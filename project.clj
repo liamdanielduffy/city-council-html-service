@@ -6,5 +6,8 @@
   :dependencies [
                  [org.clojure/clojure "1.11.1"]
                  [etaoin "1.0.40"]
+                 [cheshire "5.12.0"]
+                 [hiccup "2.0.0-RC2"]
+                 [clj-http "3.12.3"]
                  ]
   :repl-options {:init-ns city-council-html-service.core})
