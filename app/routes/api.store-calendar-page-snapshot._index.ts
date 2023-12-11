@@ -1,5 +1,8 @@
+import { PrismaClient } from '@prisma/client';
 import { json } from '@remix-run/node';
 import type { ActionFunction } from '@remix-run/node';
+
+const prisma = new PrismaClient();
 
 export let action: ActionFunction = async ({ request }: { request: Request }) => {
   if (request.method !== 'POST') {
@@ -10,17 +13,28 @@ export let action: ActionFunction = async ({ request }: { request: Request }) =>
   }
 
   const body = await request.json();
-  const { page_number, html } = body;
+  const { pageNumber, html } = body;
 
-  if (!page_number || !html) {
+  if (!pageNumber || !html) {
     return json(
-      { error: 'page_number and html fields are required' },
+      { error: 'pageNumber and html fields are required' },
       { status: 400 }
     );
   }
 
-  console.log(`Page Number: ${page_number}`);
-  console.log(`HTML: ${html}`);
+  await prisma.calendarPageSnapshot.upsert({
+    where: {
+      pageNumber
+    },
+    create: {
+      pageNumber,
+      html
+    },
+    update: {
+      pageNumber,
+      html
+    }
+  })
 
   return json({ status: 'success' }, { status: 200 });
 };

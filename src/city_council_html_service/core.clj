@@ -106,13 +106,20 @@
         (wait-for-page-load)
         (recur page-num)))))
 
+
+(defn store-page-html [page-num page-html]
+  (let [url "http://localhost:3000/api/store-calendar-page-snapshot"
+        body (json/generate-string {"pageNumber" page-num, "html" page-html})
+        headers {"Content-Type" "application/json"}]
+    (client/post url {:body body :headers headers})))
+
 (defn get-pages-html []
-  (loop [num-remaining (num-total-pages)
+  (loop [num-remaining (- (num-total-pages) 1)
          page-num 1
          html-vec []]
     (visit-page page-num)
     (def html (e/get-source driver))
-
+    (store-page-html page-num html)
     (if (pos? num-remaining)
       (recur
         (dec num-remaining)

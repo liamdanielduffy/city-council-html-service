@@ -6,7 +6,7 @@ export let loader: LoaderFunction = async ({ request }) => {
   const page = url.searchParams.get("page");
 
   const prisma = new PrismaClient();
-  const scrapedPage = await prisma.scrapedCalendarPage.findUnique({
+  const scrapedPage = await prisma.calendarPageSnapshot.findUnique({
     where: { pageNumber: Number(page) },
   });
   if (scrapedPage === null) {
