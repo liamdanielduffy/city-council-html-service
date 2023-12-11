@@ -25,7 +25,7 @@
 (defn go-to [url]
   (e/go driver url))
 
-(defn query [q]
+(defn query [q] 
   (e/query driver q))
 
 (defn go-to-calendar []
@@ -55,7 +55,7 @@
 (defn page-btn-labels []
   (map get-text-for-element (page-btns)))
 
-(defn total-pages []
+(defn num-total-pages []
   (let
     [el-id (query-el :page-state-text)
      text (get-text-for-element el-id)
@@ -65,7 +65,7 @@
     total-num-pages))
 
 (defn page-exists [page-num]
-  (<= page-num (total-pages)))
+  (<= page-num (num-total-pages)))
 
 (defn is-int-string [s]
   (try
@@ -107,7 +107,7 @@
         (recur page-num)))))
 
 (defn get-pages-html []
-  (loop [num-remaining (total-pages)
+  (loop [num-remaining (num-total-pages)
          page-num 1
          html-vec []]
     (visit-page page-num)
