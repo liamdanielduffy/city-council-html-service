@@ -113,19 +113,18 @@
         headers {"Content-Type" "application/json"}]
     (client/post url {:body body :headers headers})))
 
-(defn get-pages-html []
-  (loop [num-remaining (- (num-total-pages) 1)
-         page-num 1
-         html-vec []]
-    (visit-page page-num)
-    (def html (e/get-source driver))
-    (store-page-html page-num html)
-    (if (pos? num-remaining)
-      (recur
-        (dec num-remaining)
-        (inc page-num)
-        (conj html-vec html))
-      html-vec)))
+(defn take-calendar-snapshot []
+  (go-to-calendar)
+  (wait-for-page-load)
+  (loop [num-remaining (num-total-pages)
+         page-num 1]
+    (when (pos? num-remaining)
+        (visit-page page-num)
+        (def html (e/get-source driver))
+        (store-page-html page-num html)
+        (recur
+          (dec num-remaining)
+          (inc page-num)))))
 
 (defn save-as-json
   [data filename]
