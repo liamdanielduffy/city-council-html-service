@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 
 export let loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
-  const page = url.searchParams.get("page");
+  const page = url.searchParams.get("page") || "1";
 
   const prisma = new PrismaClient();
   const scrapedPage = await prisma.calendarPageSnapshot.findUnique({
