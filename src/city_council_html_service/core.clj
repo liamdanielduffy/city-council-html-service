@@ -192,18 +192,32 @@
         col-text (first (:content col-content))]
     col-text))
 
-(defn convert-date-to-iso [date-string]
-  (let [formatter (DateTimeFormatter/ofPattern "MM/dd/yyyy")
-        local-date (LocalDate/parse date-string formatter)
+(defn get-iso-datetime [date-string time-string]
+  (let [date-formatter (DateTimeFormatter/ofPattern "MM/dd/yyyy")
+        time-formatter (DateTimeFormatter/ofPattern "h:mm a")
+        local-date (LocalDate/parse date-string date-formatter)
+        local-time (java.time.LocalTime/parse time-string time-formatter)
         zone-id (ZoneId/of "America/New_York")
-        zoned-date-time (ZonedDateTime/of local-date (java.time.LocalTime/MIDNIGHT) zone-id)]
-    (.format zoned-date-time DateTimeFormatter/ISO_INSTANT)))
+        zoned-date-time (ZonedDateTime/of local-date local-time zone-id)]
+    (.format zoned-date-time DateTimeFormatter/ISO_ZONED_DATE_TIME)))
 
-(defn get-meeting-date [row]
-  (let [col (column :meeting-date row)
+(defn get-meeting-date-string [row]
+ (let [col (column :meeting-date row)
         col-content (:content col)
         col-text (first col-content)]
-    (convert-date-to-iso col-text)))
+    col-text))
+
+(defn get-meeting-time-string [row]
+  (let [col (column :meeting-time row)
+        col-content (:content (first (remove-strings (:content col))))
+        col-text (first col-content)]
+      col-text))
+
+(defn get-meeting-datetime [row]
+  (let [date-string (get-meeting-date-string row)
+        time-string (get-meeting-time-string row)
+        iso-datetime (get-iso-datetime date-string time-string)]
+    iso-datetime))
 
 (defn get-ics-url [row]
   (let [col (column :ics row)
