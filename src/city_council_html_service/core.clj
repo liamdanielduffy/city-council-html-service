@@ -4,10 +4,14 @@
             [hiccup2.core :as h]
             [clj-http.client :as client]
             [hickory.core :as hick]
-            [hickory.select :as s]))
+            [hickory.select :as s])
+  (:import [java.time LocalDate]
+           [java.time.format DateTimeFormatter]
+           [java.time ZoneId]
+           [java.time ZonedDateTime]
+           [java.time LocalTime]))
 
-;; (defonce driver (e/chrome))
-(def driver "hello")
+(defonce driver (e/chrome))
 
 (def queries {:page-buttons-container "//*[@id=\"ctl00_ContentPlaceHolder1_gridCalendar_ctl00\"]/thead/tr[1]/td/table/tbody/tr/td/div[1]"
               :page-state-text "/html/body/form/div[3]/div[6]/div/div/div[5]/div[1]/div/div/div/div/table/thead/tr[1]/td/table/tbody/tr/td/div[2]"
@@ -140,15 +144,64 @@
   (let [url (str "http://localhost:3000?page=" page-num)]
     (fetch-html url)))
 
-(defn page-htree [page-num]
+(defn page [page-num]
   (hick/as-hickory (hick/parse (get-page-html page-num))))
 
-(def page1 (page-htree 1))
+(defn remove-strings [v]
+  (filter (complement string?) v))
 
-(defn get-table [htree]
-  (let [table-selector (s/and (s/class "rgMasterTable") (s/tag :table))
-        tbody-selector (s/child table-selector (s/tag :tbody))]
-    (s/select tbody-selector htree)))
+(defn rows-with-class-name [class-name parsed-page]
+  (s/select (s/class class-name) parsed-page))
 
+(defn rows [page]
+  (let [odd-rows (rows-with-class-name "rgRow" page)
+        even-rows (s/select (s/class "rgAltRow") page)
+        all-rows (vec (interleave odd-rows even-rows))]
+    all-rows))
 
-(get-table page1)
+(defn row [row-num page]
+  (let [row-idx (dec row-num)
+        row (nth (rows page) row-idx)]
+    row))
+
+(defn columns [row]
+  (remove-strings (:content row)))
+
+(def column-idx
+  {
+   :meeting-name  0
+   :meeting-date 1
+   :ics 2
+   :meeting-time 3
+   :meeting-location 4
+   :meeting-topic 5
+   :meeting-details 6
+   :meeting-agenda 7
+   :meeting-minutes 8
+   :meeting-video 9
+   })
+
+(defn column [column-key row]
+  (let [cols (columns row)
+       idx (column-idx column-key)]
+    (nth cols idx)))
+
+(defn get-meeting-name [row]
+  (let [col (column :meeting-name row)
+        col-content (first (remove-strings (:content col)))
+        col-text (first (:content col-content))]
+    col-text))
+
+(defn convert-date-to-iso [date-string]
+  (let [formatter (DateTimeFormatter/ofPattern "MM/dd/yyyy")
+        local-date (LocalDate/parse date-string formatter)
+        zone-id (ZoneId/of "America/New_York")
+        zoned-date-time (ZonedDateTime/of local-date (java.time.LocalTime/MIDNIGHT) zone-id)]
+    (.format zoned-date-time DateTimeFormatter/ISO_INSTANT)))
+
+(defn get-meeting-date [row]
+  (let [col (column :meeting-date row)
+        col-content (:content col)
+        col-text (first col-content)]
+    (convert-date-to-iso col-text)))
+
