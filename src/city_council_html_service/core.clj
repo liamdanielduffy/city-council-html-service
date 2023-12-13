@@ -224,3 +224,9 @@
         link-el (first (s/select (s/child (s/tag :a)) col))
         link-path (:href (:attrs link-el))]
     (str "https://legistar.council.nyc.gov/" link-path)))
+
+(defn get-meeting-location [row]
+  (let [col (column :meeting-location row)
+       col-content (:content col)
+       col-text (first col-content)]
+  col-text))
