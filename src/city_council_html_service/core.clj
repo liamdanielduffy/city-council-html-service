@@ -205,3 +205,8 @@
         col-text (first col-content)]
     (convert-date-to-iso col-text)))
 
+(defn get-ics-url [row]
+  (let [col (column :ics row)
+        link-el (first (s/select (s/child (s/tag :a)) col))
+        link-path (:href (:attrs link-el))]
+    (str "https://legistar.council.nyc.gov/" link-path)))
