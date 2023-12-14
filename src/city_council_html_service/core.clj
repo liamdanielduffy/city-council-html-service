@@ -219,11 +219,19 @@
         iso-datetime (get-iso-datetime date-string time-string)]
     iso-datetime))
 
-(defn get-ics-url [row]
-  (let [col (column :ics row)
-        link-el (first (s/select (s/child (s/tag :a)) col))
+(defn get-children-tags-of-type [tag htree]
+  (s/select (s/child (s/tag tag)) htree))
+
+(defn get-col-link-url [col-name row]
+  (let [col (column col-name row)
+        link-el (first (get-children-tags-of-type :a col))
         link-path (:href (:attrs link-el))]
-    (str "https://legistar.council.nyc.gov/" link-path)))
+    (if link-path
+      (str "https://legistar.council.nyc.gov/" link-path)
+      nil)))
+
+(defn get-meeting-ics-url [row]
+  (get-col-link-url :ics row))
 
 (def nbsp-regex #" ")
 
@@ -240,3 +248,29 @@
         cleaned-content (clojure.string/replace col-text nbsp-regex " ")
         trimmed-content (clojure.string/trim cleaned-content)]
     trimmed-content))
+
+
+(defn get-meeting-details-url [row]
+  (get-col-link-url :meeting-details row))
+
+(defn get-meeting-agenda-url [row]
+  (get-col-link-url :meeting-agenda row))
+
+(defn get-meeting-minutes-url [row]
+  (get-col-link-url :meeting-minutes row))
+
+(defn get-meeting-video-url [row]
+  (get-col-link-url :meeting-minutes row))
+
+(defn get-meeting [row]
+  {
+   :name  (get-meeting-name row)
+   :datetime (get-meeting-datetime row)
+   :ics-url (get-meeting-ics-url row)
+   :location (get-meeting-location row)
+   :topic (get-meeting-topic row)
+   :details-url (get-meeting-details-url row)
+   :agenda-url (get-meeting-agenda-url row)
+   :minutes-url (get-meeting-minutes-url row)
+   :video-url (get-meeting-video-url row)
+   })
