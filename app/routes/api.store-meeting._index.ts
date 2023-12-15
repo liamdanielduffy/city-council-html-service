@@ -3,6 +3,7 @@ import { json } from '@remix-run/node';
 import type { ActionFunction } from '@remix-run/node';
 
 export let action: ActionFunction = async ({ request }: { request: Request }) => {
+
   if (request.method !== 'POST') {
     return json(
       { error: 'This endpoint only accepts POST requests' },
@@ -11,27 +12,13 @@ export let action: ActionFunction = async ({ request }: { request: Request }) =>
   }
 
   const body = await request.json();
-  const { pageNumber, html } = body;
 
-  if (!pageNumber || !html) {
-    return json(
-      { error: 'pageNumber and html fields are required' },
-      { status: 400 }
-    );
-  }
-
-  await prisma.calendarPageSnapshot.upsert({
+  await prisma.cityCouncilMeeting.upsert({
     where: {
-      pageNumber
+      id: body.id
     },
-    create: {
-      pageNumber,
-      html
-    },
-    update: {
-      pageNumber,
-      html
-    }
+    create: body,
+    update: body
   })
 
   return json({ status: 'success' }, { status: 200 });

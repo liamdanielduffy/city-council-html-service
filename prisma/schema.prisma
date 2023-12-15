@@ -15,3 +15,19 @@ model CalendarPageSnapshot {
   html       String   @db.LongText
   pageNumber Int      @unique
 }
+
+model CityCouncilMeeting {
+  id         String    @id @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  name       String    @db.LongText
+  dateTime   DateTime?
+  deferred   Boolean
+  icsUrl     String    @db.LongText
+  location   String    @db.LongText
+  topic      String?   @db.LongText
+  detailsUrl String?   @db.LongText
+  agendaUrl  String?   @db.LongText
+  minutesUrl String?   @db.LongText
+  videoUrl   String?   @db.LongText
+}

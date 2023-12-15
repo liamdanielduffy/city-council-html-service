@@ -1,15 +1,15 @@
 (ns city-council-html-service.core
   (:require [etaoin.api :as e]
             [cheshire.core :as json]
-            [hiccup2.core :as h]
             [clj-http.client :as client]
             [hickory.core :as hick]
-            [hickory.select :as s])
+            [hickory.select :as s]
+            [ring.middleware.params :as params])
   (:import [java.time LocalDate]
            [java.time.format DateTimeFormatter]
            [java.time ZoneId]
            [java.time ZonedDateTime]
-           [java.time LocalTime]))
+           [java.net URL]))
 
 (defonce driver (e/chrome))
 
@@ -193,13 +193,28 @@
     col-text))
 
 (defn get-iso-datetime [date-string time-string]
-  (let [date-formatter (DateTimeFormatter/ofPattern "MM/dd/yyyy")
-        time-formatter (DateTimeFormatter/ofPattern "h:mm a")
-        local-date (LocalDate/parse date-string date-formatter)
-        local-time (java.time.LocalTime/parse time-string time-formatter)
-        zone-id (ZoneId/of "America/New_York")
-        zoned-date-time (ZonedDateTime/of local-date local-time zone-id)]
-    (.format zoned-date-time DateTimeFormatter/ISO_ZONED_DATE_TIME)))
+  (if (= time-string "Deferred") nil
+    (let [date-formatter (DateTimeFormatter/ofPattern "M/d/yyyy")
+          time-formatter (DateTimeFormatter/ofPattern "h:mm a")
+          local-date (LocalDate/parse date-string date-formatter)
+          local-time (java.time.LocalTime/parse time-string time-formatter)
+          zone-id (ZoneId/of "America/New_York")
+          zoned-date-time (ZonedDateTime/of local-date local-time zone-id)]
+      (.format zoned-date-time DateTimeFormatter/ISO_OFFSET_DATE_TIME))))
+
+(defn extract-query-params [url-str]
+  (let [url (URL. url-str)
+        query (.getQuery url)]
+    (if query
+      (let [param-pairs (clojure.string/split query #"\&")
+            params (reduce
+                     (fn [m param-pair]
+                       (let [[key value] (clojure.string/split param-pair #"\=")]
+                         (assoc m key value)))
+                     {}
+                     param-pairs)]
+        params)
+      {})))
 
 (defn get-meeting-date-string [row]
  (let [col (column :meeting-date row)
@@ -218,6 +233,9 @@
         time-string (get-meeting-time-string row)
         iso-datetime (get-iso-datetime date-string time-string)]
     iso-datetime))
+
+(defn get-meeting-deferred [row]
+  (not (get-meeting-datetime row)))
 
 (defn get-children-tags-of-type [tag htree]
   (s/select (s/child (s/tag tag)) htree))
@@ -246,12 +264,18 @@
         col-content (:content col)
         col-text (first col-content)
         cleaned-content (clojure.string/replace col-text nbsp-regex " ")
-        trimmed-content (clojure.string/trim cleaned-content)]
-    trimmed-content))
-
+        trimmed-content (clojure.string/trim cleaned-content)
+        final-content (if (empty? trimmed-content) "" trimmed-content)]
+    final-content))
 
 (defn get-meeting-details-url [row]
   (get-col-link-url :meeting-details row))
+
+(defn get-meeting-id [row]
+  (let [details-url-params (->> row
+                          (get-meeting-details-url)
+                          (extract-query-params))]
+    (get details-url-params "GUID")))
 
 (defn get-meeting-agenda-url [row]
   (get-col-link-url :meeting-agenda row))
@@ -260,17 +284,26 @@
   (get-col-link-url :meeting-minutes row))
 
 (defn get-meeting-video-url [row]
-  (get-col-link-url :meeting-minutes row))
+  (get-col-link-url :meeting-video row))
 
 (defn get-meeting [row]
   {
-   :name  (get-meeting-name row)
-   :datetime (get-meeting-datetime row)
-   :ics-url (get-meeting-ics-url row)
-   :location (get-meeting-location row)
-   :topic (get-meeting-topic row)
-   :details-url (get-meeting-details-url row)
-   :agenda-url (get-meeting-agenda-url row)
-   :minutes-url (get-meeting-minutes-url row)
-   :video-url (get-meeting-video-url row)
+   "id" (get-meeting-id row)
+   "name"  (get-meeting-name row)
+   "dateTime" (get-meeting-datetime row)
+   "icsUrl" (get-meeting-ics-url row)
+   "location" (get-meeting-location row)
+   "deferred" (get-meeting-deferred row)
+   "topic" (get-meeting-topic row)
+   "detailsUrl" (get-meeting-details-url row)
+   "agendaUrl" (get-meeting-agenda-url row)
+   "minutesUrl" (get-meeting-minutes-url row)
+   "videoUrl" (get-meeting-video-url row)
    })
+
+(defn store-meeting [row]
+  (let [meeting (get-meeting row)
+        url "http://localhost:3000/api/store-meeting"
+        body (json/generate-string meeting)
+        headers {"Content-Type" "application/json"}]
+    (client/post url {:body body :headers headers})))

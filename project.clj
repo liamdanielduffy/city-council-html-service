@@ -8,5 +8,6 @@
                  [cheshire "5.12.0"]
                  [hiccup "2.0.0-RC2"]
                  [clj-http "3.12.3"]
-                 [org.clj-commons/hickory "0.7.3"]]
+                 [org.clj-commons/hickory "0.7.3"]
+                 [ring/ring-core "1.11.0-RC2"]]
   :repl-options {:init-ns city-council-html-service.core})
